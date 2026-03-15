@@ -96,6 +96,14 @@ else
 fi
 
 
+# Install Bazel
+if ! command -v bazel --version &>/dev/null; then
+    echo "Installing Bazel"
+    brew install bazel
+else
+    echo "Bazel already installed"
+fi
+
 #####################################
 # Create SSH key
 #####################################
