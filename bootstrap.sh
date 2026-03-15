@@ -40,58 +40,61 @@ fi
 brew update
 
 #####################################
-# Install packages from Brewfile
-#####################################
-
-echo "Installing Brewfile packages..."
-brew bundle
-
-#####################################
 # Install Rust
 #####################################
-
-if ! command -v rustc &>/dev/null; then
+if command -v rustc &>/dev/null; then
+    echo "Rust already installed: $(rustc --version)"
+else
     echo "Installing Rust..."
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 fi
 
 #####################################
-# Setup language environments
+# Install Go
 #####################################
 
-echo "Configuring language environments..."
-
-# ---------- Go ----------
-
-if ! grep -q "GOPATH" "$SHELL_RC"; then
-cat <<'EOF' >> "$SHELL_RC"
-
-# Go environment
-export GOPATH=$HOME/go
-export PATH=$PATH:$GOPATH/bin
-EOF
+if ! command -v go &>/dev/null; then
+    echo "Installing Go..."
+    brew install go
+else
+    echo "Go already installed"
 fi
 
-# ---------- Rust ----------
+#####################################
+# Install Rust
+#####################################
 
-if ! grep -q ".cargo/env" "$SHELL_RC"; then
-cat <<'EOF' >> "$SHELL_RC"
+echo "Checking Rust installation..."
 
-# Rust environment
-source "$HOME/.cargo/env"
-EOF
+if command -v rustc >/dev/null 2>&1; then
+    echo "Rust already installed: $(rustc --version)"
+else
+    echo "Installing Rust via rustup..."
+
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs -o rustup-init.sh
+    sh rustup-init.sh -y --no-modify-path
+
+    # Load cargo environment so rustc works immediately
+    if [ -f "$HOME/.cargo/env" ]; then
+        source "$HOME/.cargo/env"
+    fi
+
+    rm rustup-init.sh
 fi
 
-# ---------- Java ----------
 
-if ! grep -q "JAVA_HOME" "$SHELL_RC"; then
-cat <<'EOF' >> "$SHELL_RC"
+#####################################
+# Install Docker Desktop
+#####################################
+echo "Verifying Docker Installation"
 
-# Java environment
-export JAVA_HOME=$(/usr/libexec/java_home)
-export PATH=$JAVA_HOME/bin:$PATH
-EOF
+if ! command -v docker &>/dev/null; then
+    echo "Installing Docker Desktop..."
+    brew install --cask docker
+else
+    echo "Docker already installed"
 fi
+
 
 #####################################
 # Create SSH key
@@ -102,15 +105,32 @@ SSH_KEY="$HOME/.ssh/id_ed25519"
 if [[ ! -f "$SSH_KEY" ]]; then
     echo "Creating SSH key..."
     ssh-keygen -t ed25519 -C "<email>" -f "$SSH_KEY" -N ""
+else
+    echo "SSH key already generated"
 fi
 
 #####################################
-# Language verification
+# Install Claude Code CLI
+#####################################
+
+if command -v claude &>/dev/null; then
+    echo "Claude CLI already installed: $(claude --version)"
+else
+    echo "Installing Claude CLI..."
+    curl -fsSL https://claude.ai/install.sh | bash
+
+    # Ensure path is loaded
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
+    echo "Claude installed: $(claude --version)"
+fi
+
+#####################################
+# Installation verification
 #####################################
 
 echo ""
 echo "==================================="
-echo "Verifying language installations"
+echo "Verifying installations"
 echo "==================================="
 
 verify() {
@@ -125,16 +145,14 @@ verify() {
     fi
 }
 
+verify "Claude CLI" "claude --version"
 verify "Go" "go version"
 verify "Rust" "rustc --version"
-verify "Java" "java -version"
-
 echo ""
 echo "==================================="
 echo "Bootstrap complete!"
 echo ""
 echo "Reload your shell:"
-echo "source $SHELL_RC"
 echo ""
 echo "Add SSH key to GitHub:"
 echo "pbcopy < ~/.ssh/id_ed25519.pub"
