@@ -104,6 +104,15 @@ else
     echo "Bazel already installed"
 fi
 
+
+# Install Maven
+if ! command -v mvn &>/dev/null; then
+    echo "Installing Maven"
+    brew install maven
+else 
+    echo "Maven already installed"
+fi
+
 #####################################
 # Create SSH key
 #####################################
