@@ -142,6 +142,21 @@ else
 fi
 
 #####################################
+# Install Codex CLI
+#####################################
+
+if command -v codex &>/dev/null; then
+    echo "Codex already installed: $(codex --version)"
+else
+    echo "Installing Codex..."
+    brew install --cask codex
+
+    # Ensure path is loaded
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
+    echo "Codex installed: $(codex --version)"
+fi
+
+#####################################
 # Installation verification
 #####################################
 
